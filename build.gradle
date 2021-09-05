@@ -14,17 +14,20 @@ repositories {
 
 dependencies {
 
+    // PGP tools
+    implementation 'org.bouncycastle:bcpg-jdk15on:1+'
+
     // unit testing
-    testImplementation('org.junit.jupiter:junit-jupiter-api:5+')
-    testImplementation('org.junit.jupiter:junit-jupiter-params:5+')
-    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5+')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5+'
+    testImplementation'org.junit.jupiter:junit-jupiter-params:5+'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5+'
 
     // logging
-    implementation('org.apache.logging.log4j:log4j-api:2+')
-    implementation('org.apache.logging.log4j:log4j-core:2+')
+    implementation 'org.apache.logging.log4j:log4j-api:2+'
+    implementation 'org.apache.logging.log4j:log4j-core:2+'
 
     // developer ergonomics
-    compileOnly('org.projectlombok:lombok:1+')
+    compileOnly 'org.projectlombok:lombok:1+'
     annotationProcessor('org.projectlombok:lombok:1+')
     testCompileOnly('org.projectlombok:lombok:1+')
     testAnnotationProcessor('org.projectlombok:lombok:1+')
@@ -36,16 +39,35 @@ java {
 }
 
 application {
-    mainModule.set('systems.cauldron.utility.example')
-    mainClass.set('systems.cauldron.utility.example.Application')
-}
-
-jar {
-    manifest {
-        attributes 'Main-Class': 'systems.cauldron.utility.example.Application'
-    }
+    mainModule = 'systems.cauldron.utility.example'
+    mainClass = 'systems.cauldron.utility.example.Application'
 }
 
 test {
     useJUnitPlatform()
+}
+
+tasks.named("wrapper", Wrapper) {
+    it.distributionType = Wrapper.DistributionType.ALL
+}
+
+tasks.named('jar', Jar) {
+    it.manifest.attributes = [
+            'Main-Class': 'systems.cauldron.utility.example.Application'
+    ]
+    it.archiveFileName.set('pgp-fingerprint.jar')
+    it.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    it.from sourceSets['main'].output
+    it.dependsOn configurations.runtimeClasspath
+    it.from {
+        configurations.getByName('runtimeClasspath') findAll {
+            it.name.endsWith('jar')
+        } collect {
+            zipTree(it) matching {
+                exclude 'META-INF/*.RSA',
+                        'META-INF/*.SF',
+                        'META-INF/*.DSA'
+            }
+        }
+    }
 }
